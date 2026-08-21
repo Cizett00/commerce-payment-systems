@@ -23,14 +23,14 @@ public class PaymentFacade {
         Payment payment = paymentService.findByOrderIdWithOrder(confirmRequest.orderId());
         Order order = payment.getOrder();
 
-        //결제 중복 확인
-        if (payment.getStatus() != PaymentStatus.IN_PROGRESS) {
-            throw new BusinessException(ErrorCode.ALREADY_PROCESSED_PAYMENT);
-        }
-
         //주문자와 사용자 일치 확인
         if (!order.getCustomer().getId().equals(userId)) {
             throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
+        }
+
+        //결제 중복 확인
+        if (payment.getStatus() != PaymentStatus.IN_PROGRESS) {
+            throw new BusinessException(ErrorCode.ALREADY_PROCESSED_PAYMENT);
         }
 
         //주문 상태 전이 가능 여부 확인
