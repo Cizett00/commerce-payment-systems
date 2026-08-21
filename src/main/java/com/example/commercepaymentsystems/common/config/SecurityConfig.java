@@ -32,7 +32,8 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers(
                                         "/api/products",
-                                        "/api/products/**"
+                                        "/api/products/**",
+                                        "/api/portone-info"
                                 ).permitAll()
                                 .anyRequest().authenticated())
                 .addFilterBefore(
