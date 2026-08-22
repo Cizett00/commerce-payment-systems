@@ -1,5 +1,7 @@
 package com.example.commercepaymentsystems.domain.payment.service;
 
+import com.example.commercepaymentsystems.common.exception.BusinessException;
+import com.example.commercepaymentsystems.common.exception.ErrorCode;
 import com.example.commercepaymentsystems.customers.entity.Customers;
 import com.example.commercepaymentsystems.orders.entity.Order;
 import com.example.commercepaymentsystems.payments.dto.PaymentResponse;
@@ -17,6 +19,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -68,7 +71,9 @@ public class PaymentServiceTests {
         given(repo.findByIdAndCustomerId(anyLong(), anyLong())).willReturn(Optional.empty());
 
         //when&then
-        assertThrows(RuntimeException.class, () -> service.getPayment(1L, 1L));
+        assertThatThrownBy(() ->  service.getPayment(1L, 1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.PAYMENT_NOT_FOUND.getMessage());
     }
 
     @Test
@@ -108,7 +113,9 @@ public class PaymentServiceTests {
         given(repo.findByOrderIdWithOrder(anyLong())).willReturn(Optional.empty());
 
         //when&then
-        assertThrows(RuntimeException.class, () -> service.findByOrderIdWithOrder(1L));
+        assertThatThrownBy(() ->  service.findByOrderIdWithOrder(1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.PAYMENT_NOT_FOUND.getMessage());
     }
 
     @Test

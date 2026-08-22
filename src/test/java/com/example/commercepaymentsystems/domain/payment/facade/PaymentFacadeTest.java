@@ -121,7 +121,7 @@ class PaymentFacadeTest {
         //when&then
         assertThatThrownBy(() -> paymentFacade.paymentConfirm(1L, request))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage(ErrorCode.PG_PAYMENT_FAILURE.getMessage());
+                .hasMessage(ErrorCode.PG_FAILURE.getMessage());
         verify(paymentCommandService).failPaymentAndOrder(anyLong());
 
     }

@@ -2,6 +2,7 @@ package com.example.commercepaymentsystems.domain.payment.service;
 
 import com.example.commercepaymentsystems.cart.service.CartService;
 import com.example.commercepaymentsystems.common.exception.BusinessException;
+import com.example.commercepaymentsystems.common.exception.ErrorCode;
 import com.example.commercepaymentsystems.customers.entity.Customers;
 import com.example.commercepaymentsystems.orders.entity.Order;
 import com.example.commercepaymentsystems.orders.entity.OrderStatus;
@@ -18,6 +19,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -102,7 +105,9 @@ class PaymentCommandServiceTest {
         }).given(paymentService).failPayment(payment);
 
         //when&hen
-        assertThrows(RuntimeException.class, () -> paymentCommandService.failPaymentAndOrder(1L));
+        assertThatThrownBy(() -> paymentCommandService.failPaymentAndOrder(1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.INVALID_PAYMENT_STATUS.getMessage());
     }
 
     @Test
@@ -174,6 +179,8 @@ class PaymentCommandServiceTest {
         }).given(orderService).confirmOrder(order);
 
         //when&then
-        assertThrows(BusinessException.class, () -> paymentCommandService.approvePaymentAndOrder(1L));
+        assertThatThrownBy(() -> paymentCommandService.approvePaymentAndOrder(1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.INVALID_ORDER_STATUS.getMessage());
     }
 }

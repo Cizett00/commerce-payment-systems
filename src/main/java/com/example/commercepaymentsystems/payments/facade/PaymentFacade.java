@@ -48,7 +48,7 @@ public class PaymentFacade {
         if(confirmRequest.result().equals("FAIL")) {
             commandService.failPaymentAndOrder(order.getId());
 
-            throw new BusinessException(ErrorCode.PG_PAYMENT_FAILURE);
+            throw new BusinessException(ErrorCode.PG_FAILURE);
         }
 
         return commandService.approvePaymentAndOrder(order.getId());
