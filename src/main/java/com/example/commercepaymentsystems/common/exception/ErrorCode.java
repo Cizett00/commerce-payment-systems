@@ -41,7 +41,7 @@ public enum ErrorCode {
     INVALID_PAYMENT_STATUS(HttpStatus.BAD_REQUEST, "PAYMENT_002", "유효하지 않은 상태입니다."),
     ALREADY_PROCESSED_PAYMENT(HttpStatus.BAD_REQUEST, "PAYMENT_003", "이미 처리된 결제입니다."),
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "PAYMENT_004", "결제 금액 정보가 일치하지 않습니다."),
-    PG_PAYMENT_FAILURE(HttpStatus.BAD_REQUEST, "PAYMENT_005", "PG 결제 시도 실패"),
+    PG_FAILURE(HttpStatus.BAD_REQUEST, "PAYMENT_005", "PG 시도 실패"),
   
     //cart (CART_xxx)
     CART_EMPTY(HttpStatus.BAD_REQUEST, "CART_001", "장바구니가 비어있습니다." ),
