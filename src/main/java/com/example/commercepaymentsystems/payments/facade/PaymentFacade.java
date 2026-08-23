@@ -4,6 +4,8 @@ import com.example.commercepaymentsystems.common.exception.BusinessException;
 import com.example.commercepaymentsystems.common.exception.ErrorCode;
 import com.example.commercepaymentsystems.orders.entity.Order;
 import com.example.commercepaymentsystems.orders.entity.OrderStatus;
+import com.example.commercepaymentsystems.payments.dto.PaymentCancelRequest;
+import com.example.commercepaymentsystems.payments.dto.PaymentCancelResponse;
 import com.example.commercepaymentsystems.payments.dto.PaymentConfirmRequest;
 import com.example.commercepaymentsystems.payments.dto.PaymentConfirmResponse;
 import com.example.commercepaymentsystems.payments.entity.Payment;
@@ -14,10 +16,12 @@ import com.example.commercepaymentsystems.payments.service.PaymentCommandService
 import com.example.commercepaymentsystems.payments.service.PaymentService;
 import com.example.commercepaymentsystems.point.PointService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentFacade {
     private final PaymentService paymentService;
     private final PaymentCommandService commandService;
@@ -66,5 +70,29 @@ public class PaymentFacade {
         }
 
         return commandService.approvePaymentAndOrder(order.getId());
+    }
+
+    public PaymentCancelResponse paymentCancel(Long customerId, Long paymentId, PaymentCancelRequest request) {
+        String cancelReason = (request != null && request.reason() != null)
+                ? request.reason() : "사용자 요청 취소";
+
+        Payment payment = paymentService.findByOrderIdWithOrder(paymentId);
+        if (!payment.getOrder().getCustomer().getId().equals(customerId)) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
+        }
+
+        if (payment.getStatus() != PaymentStatus.PAID) {
+            throw new BusinessException(ErrorCode.INVALID_PAYMENT_STATUS);
+        }
+
+        PaymentCancelResponse response = commandService.cancelPaymentAndOrder(paymentId);
+
+        try {
+            paymentGateway.cancelPayment(payment.getPortoneId(), cancelReason);
+        } catch (Exception e) {
+            log.error("PG 결제 취소 실패 : DB 커밋됨, 수동 처리 필요 paymentId={}", response.portoneId(), e);
+        }
+
+        return response;
     }
 }
