@@ -23,16 +23,12 @@ public class PaymentCommandService {
     private final OrderService orderService;
     private final ProductService productService;
     private final CartService cartService;
-    private final PaymentGateway paymentGateway;
     private final PointService pointService;
 
     @Transactional
     public void failPaymentAndOrder(Long orderId) {
         Payment payment = paymentService.findByOrderIdWithOrder(orderId);
         Order order = payment.getOrder();
-
-        //PG 사 결제 취소
-        paymentGateway.cancelPayment(payment.getPortoneId(), "PAYMENT FAILED");
 
         paymentService.failPayment(payment);
         orderService.cancelOrder(order);
