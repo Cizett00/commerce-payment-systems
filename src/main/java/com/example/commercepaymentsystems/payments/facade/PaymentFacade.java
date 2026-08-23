@@ -8,8 +8,11 @@ import com.example.commercepaymentsystems.payments.dto.PaymentConfirmRequest;
 import com.example.commercepaymentsystems.payments.dto.PaymentConfirmResponse;
 import com.example.commercepaymentsystems.payments.entity.Payment;
 import com.example.commercepaymentsystems.payments.entity.PaymentStatus;
+import com.example.commercepaymentsystems.payments.port.PaymentGateway;
+import com.example.commercepaymentsystems.payments.port.PaymentGatewayResponse;
 import com.example.commercepaymentsystems.payments.service.PaymentCommandService;
 import com.example.commercepaymentsystems.payments.service.PaymentService;
+import com.example.commercepaymentsystems.point.PointService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -18,13 +21,16 @@ import org.springframework.stereotype.Component;
 public class PaymentFacade {
     private final PaymentService paymentService;
     private final PaymentCommandService commandService;
+    private final PaymentGateway paymentGateway;
+    private final PointService pointService;
 
     public PaymentConfirmResponse paymentConfirm(Long userId, PaymentConfirmRequest confirmRequest) {
         Payment payment = paymentService.findByOrderIdWithOrder(confirmRequest.orderId());
         Order order = payment.getOrder();
+        Long customerId = order.getCustomer().getId();
 
         //주문자와 사용자 일치 확인
-        if (!order.getCustomer().getId().equals(userId)) {
+        if (!customerId.equals(userId)) {
             throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
         }
 
@@ -38,8 +44,16 @@ public class PaymentFacade {
             throw new BusinessException(ErrorCode.INVALID_ORDER_STATUS);
         }
 
+        //포인트 사용 가능 여부 확인
+        if (!pointService.verifyPoint(customerId, payment.getPointUsed())) {
+           throw new RuntimeException("Invalid point");
+        }
+
+        //PG 사에서 실결제 정보 확인
+        PaymentGatewayResponse paymentInfo = paymentGateway.getPayment(payment.getPortoneId());
+
         //결제 금액과 주문 금액 검증
-        if (!confirmRequest.paymentPrice().equals(payment.getFinalPrice())) {
+        if (!confirmRequest.paymentPrice().equals(paymentInfo.totalAmount())) {
             throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 

@@ -1,12 +1,13 @@
 package com.example.commercepaymentsystems.payments.service;
 
-import com.example.commercepaymentsystems.cart.entity.CartItem;
 import com.example.commercepaymentsystems.cart.service.CartService;
 import com.example.commercepaymentsystems.orders.entity.Order;
 import com.example.commercepaymentsystems.orders.entity.OrderItem;
 import com.example.commercepaymentsystems.orders.service.OrderService;
 import com.example.commercepaymentsystems.payments.dto.PaymentConfirmResponse;
 import com.example.commercepaymentsystems.payments.entity.Payment;
+import com.example.commercepaymentsystems.payments.port.PaymentGateway;
+import com.example.commercepaymentsystems.point.PointService;
 import com.example.commercepaymentsystems.products.entity.Product;
 import com.example.commercepaymentsystems.products.service.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -22,14 +23,23 @@ public class PaymentCommandService {
     private final OrderService orderService;
     private final ProductService productService;
     private final CartService cartService;
+    private final PaymentGateway paymentGateway;
+    private final PointService pointService;
 
     @Transactional
     public void failPaymentAndOrder(Long orderId) {
         Payment payment = paymentService.findByOrderIdWithOrder(orderId);
         Order order = payment.getOrder();
 
+        //PG 사 결제 취소
+        paymentGateway.cancelPayment(payment.getPortoneId(), "PAYMENT FAILED");
+
         paymentService.failPayment(payment);
         orderService.cancelOrder(order);
+
+        //포인트 계산 후 포인트 복구
+        Long pointsToRestore = payment.getSavedPoints() - payment.getPointUsed();
+        pointService.restoreUsedPoint(payment.getOrder().getCustomer().getId(), pointsToRestore);
 
         restoreStock(order);
     }
@@ -38,9 +48,11 @@ public class PaymentCommandService {
     public PaymentConfirmResponse approvePaymentAndOrder(Long orderId) {
         Payment payment = paymentService.findByOrderIdWithOrder(orderId);
         Order order = payment.getOrder();
+        Long customerId = order.getCustomer().getId();
 
         paymentService.confirmPayment(payment);
         orderService.confirmOrder(order);
+        pointService.usePoint(customerId, payment.getPointUsed());
 
         cartService.removeAllItems(order.getCustomer().getId());
 
