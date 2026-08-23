@@ -40,6 +40,11 @@ public class PaymentService {
     }
 
     @Transactional
+    public void cancelPayment(Payment payment) {
+        payment.markAsCancelled();
+    }
+
+    @Transactional
     public void createPayment(Order order, Long totalPrice, Long pointUsed) {
         Payment payment = new Payment(
                 totalPrice,
@@ -49,6 +54,11 @@ public class PaymentService {
         );
 
         paymentRepository.save(payment);
+    }
+
+    public Payment findByPortOneId(String portonePaymentId) {
+        return paymentRepository.findByPortoneId(portonePaymentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
     }
 
     private PaymentResponse toResponse(Payment payment) {

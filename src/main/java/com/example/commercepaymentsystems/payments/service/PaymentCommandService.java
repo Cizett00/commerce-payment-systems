@@ -4,6 +4,7 @@ import com.example.commercepaymentsystems.cart.service.CartService;
 import com.example.commercepaymentsystems.orders.entity.Order;
 import com.example.commercepaymentsystems.orders.entity.OrderItem;
 import com.example.commercepaymentsystems.orders.service.OrderService;
+import com.example.commercepaymentsystems.payments.dto.PaymentCancelResponse;
 import com.example.commercepaymentsystems.payments.dto.PaymentConfirmResponse;
 import com.example.commercepaymentsystems.payments.entity.Payment;
 import com.example.commercepaymentsystems.payments.port.PaymentGateway;
@@ -58,6 +59,27 @@ public class PaymentCommandService {
                 payment.getFinalPrice(),
                 payment.getStatus().name(),
                 order.getOrderStatus().name()
+        );
+    }
+
+    @Transactional
+    public PaymentCancelResponse cancelPaymentAndOrder(Long id) {
+        Payment payment = paymentService.findByOrderIdWithOrder(id);
+        Order order = payment.getOrder();
+
+        //PG사 결제 취소
+        paymentGateway.cancelPayment(payment.getPortoneId(), "PAYMENT CANCELLED");
+
+        paymentService.cancelPayment(payment);
+        orderService.cancelOrder(order);
+
+        return new PaymentCancelResponse(
+                payment.getId(),
+                order.getId(),
+                payment.getPortoneId(),
+                payment.getStatus().name(),
+                order.getStatus().name(),
+                "결제가 취소되었습니다."
         );
     }
 
