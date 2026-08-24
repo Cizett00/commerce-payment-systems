@@ -5,6 +5,7 @@ import com.example.commercepaymentsystems.products.dto.ProductPageResponse;
 import com.example.commercepaymentsystems.products.dto.ProductResponse;
 import com.example.commercepaymentsystems.products.entity.Product;
 import com.example.commercepaymentsystems.products.enums.ProductCategory;
+import com.example.commercepaymentsystems.products.enums.ProductStatus;
 import com.example.commercepaymentsystems.products.repository.ProductRepository;
 import com.example.commercepaymentsystems.products.specification.ProductSpecification;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ import java.util.List;
 public class ProductService {
     public final ProductRepository productRepository;
 
-    public ProductPageResponse findAll(int page, int size, ProductCategory category, Long minimumPrice, Long maximumPrice, String sort) {
+    public ProductPageResponse findAll(int page, int size, ProductCategory category, Long minimumPrice, Long maximumPrice, ProductStatus salesStatus,Boolean soldOut, String sort) {
         if (page <0){
             throw new BusinessException(ErrorCode.INVALID_PAGE);
         }//페이지
@@ -38,14 +39,16 @@ public class ProductService {
         if (maximumPrice != null && minimumPrice != null && minimumPrice>maximumPrice){
             throw new BusinessException(ErrorCode.INVALID_PRICE_RANGE);
         }
-        Sort.Direction direction;
+        Sort sorting;
         if (sort.equals("asc")){
-            direction = Sort.Direction.ASC;
+            sorting = Sort.by(Sort.Direction.ASC,"price");
+        }else if (sort.equals("desc")){
+            sorting = Sort.by(Sort.Direction.DESC,"price");
         }else {
-            direction = Sort.Direction.DESC;
+            sorting = Sort.by(Sort.Direction.DESC,"createdAt");
         }
-        Pageable pageable= PageRequest.of(page,size, Sort.by(direction,"price"));
-        Specification<Product> spec= ProductSpecification.hasCategory(category).and(ProductSpecification.minimumValue(minimumPrice).and(ProductSpecification.maximumValue(maximumPrice)));
+        Pageable pageable= PageRequest.of(page,size, sorting);
+        Specification<Product> spec= ProductSpecification.hasCategory(category).and(ProductSpecification.minimumValue(minimumPrice).and(ProductSpecification.maximumValue(maximumPrice).and(ProductSpecification.hasSalesStatus(salesStatus)).and(ProductSpecification.hasSoldOut(soldOut))));
         Page<Product> products=productRepository.findAll(spec,pageable);
         List<ProductResponse> productResponses= products.stream()
                 .map(this::toResponse)
