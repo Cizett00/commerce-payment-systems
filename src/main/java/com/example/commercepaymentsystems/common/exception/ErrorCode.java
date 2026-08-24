@@ -46,7 +46,12 @@ public enum ErrorCode {
     //cart (CART_xxx)
     CART_EMPTY(HttpStatus.BAD_REQUEST, "CART_001", "장바구니가 비어있습니다." ),
     INVALID_QUANTITY(HttpStatus.BAD_REQUEST, "CART_003", "수량은 1 이상이어야 합니다."),
-    STOCK_EXCEEDED(HttpStatus.CONFLICT,"CART_004", "재고가 부족하여 담을 수 없습니다.");
+    STOCK_EXCEEDED(HttpStatus.CONFLICT,"CART_004", "재고가 부족하여 담을 수 없습니다."),
+
+
+
+    //POINT
+    INSUFFICIENT_POINT(HttpStatus.BAD_REQUEST, "POINT_001", "포인트 잔액이 부족합니다.");
 
 
     private final HttpStatus status;
