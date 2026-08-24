@@ -34,7 +34,6 @@ public class RefundItem extends BaseEntity {
     @Column(nullable = false)
     private Long refundAmount;
 
-
     public RefundItem(
             Refund refund,
             OrderItem orderItem,
