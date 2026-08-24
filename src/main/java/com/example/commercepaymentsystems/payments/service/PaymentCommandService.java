@@ -67,9 +67,6 @@ public class PaymentCommandService {
         Payment payment = paymentService.findByOrderIdWithOrder(id);
         Order order = payment.getOrder();
 
-        //PG사 결제 취소
-        paymentGateway.cancelPayment(payment.getPortoneId(), "PAYMENT CANCELLED");
-
         paymentService.cancelPayment(payment);
         orderService.cancelOrder(order);
 
