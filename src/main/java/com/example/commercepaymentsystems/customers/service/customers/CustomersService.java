@@ -63,5 +63,8 @@ public class CustomersService {
         customer.changePassword(encodedPassword);
     }
 
-
+    public Customers findById(Long customerId) {
+        return repository.findById(customerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_NOT_FOUND));
+    }
 }
