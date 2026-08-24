@@ -8,6 +8,7 @@ public record OrderDetailResponse(
         Long orderId,
         String orderNumber,
         Long totalAmount,
+        Long pointUsed,
         String status,
         LocalDateTime createdAt,
         List<OrderItemResponse> orderItems) {
