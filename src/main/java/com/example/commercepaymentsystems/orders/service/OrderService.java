@@ -151,7 +151,7 @@ public class OrderService {
 
         // 주문 금액보다 많은 포인트 사용 방지
         if (pointUsed > totalPrice) {
-            throw new IllegalArgumentException("사용 포인트가 주문금액을 초과하여 사용불가능합니다.");
+            throw new BusinessException(ErrorCode.POINT_EXCEEDS_ORDER_AMOUNT);
         }
 
         // 보유 포인트 확인 + 차감
