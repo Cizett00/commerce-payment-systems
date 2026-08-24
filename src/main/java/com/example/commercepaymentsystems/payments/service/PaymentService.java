@@ -46,7 +46,7 @@ public class PaymentService {
 
     @Transactional
     public void createPayment(Order order, Long totalPrice, Long pointUsed) {
-        Payment payment = new Payment(
+        Payment payment = Payment.create(
                 totalPrice,
                 PaymentStatus.IN_PROGRESS,
                 order,

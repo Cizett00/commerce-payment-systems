@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "payments")
@@ -46,6 +47,10 @@ public class Payment extends BaseEntity {
         this.portoneId = UUID.randomUUID().toString();
         this.pgAmount = this.finalPrice - this.pointUsed;
         this.savedPoints = this.pgAmount / 100;
+    }
+
+    public static Payment create(Long finalPrice, PaymentStatus status, Order order, Long pointUsed) {
+        return new Payment(finalPrice, status, order, pointUsed);
     }
 
     public void markAsPaid() {
