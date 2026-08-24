@@ -2,8 +2,6 @@ package com.example.commercepaymentsystems.cart.repository;
 
 import com.example.commercepaymentsystems.cart.entity.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 
 import java.util.List;
@@ -17,12 +15,11 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long>{
 
     Optional<CartItem> findByCart_IdAndProductId(Long cartId, Long productId);
 
-    int deleteByIdAndCart_Id(@Param("id") Long id,
-                             @Param("cartId")
+    int deleteByIdAndCart_Id(Long id,
                              Long cartId);
 
     Optional<CartItem> findByIdAndCart_Id(Long id, Long cartId);
 
-    void deleteByCart_Id(@Param("cartId") Long cartId);
+    void deleteByCart_Id(Long cartId);
 
 }
