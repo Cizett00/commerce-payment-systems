@@ -247,18 +247,10 @@ public class RefundService {
         }
 
         // 전체 결제금액 초과 여부
-        long alreadyRefundedAmount =
-                refundRepository.sumRefundedAmount(
-                        payment.getId()
-                );
+        long alreadyRefundedAmount = refundRepository.sumRefundedAmount(payment.getId());
 
-        if (alreadyRefundedAmount + totalRefundAmount
-                > payment.getFinalPrice()) {
-
-            throw new BusinessException(
-                    ErrorCode.REFUND_AMOUNT_MISMATCH
-            );
-
+        if (alreadyRefundedAmount + totalRefundAmount > payment.getFinalPrice()) {
+            throw new BusinessException(ErrorCode.REFUND_AMOUNT_MISMATCH);
         }
 
         // Refund 생성
@@ -329,6 +321,6 @@ public class RefundService {
         }
         if (request.quantity() == null || request.quantity() <= 0) {
             throw new BusinessException(ErrorCode.INVALID_REFUND_QUANTITY);
-
+        }
     }
 }
