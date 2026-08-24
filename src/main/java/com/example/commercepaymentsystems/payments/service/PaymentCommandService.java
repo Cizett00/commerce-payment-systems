@@ -1,13 +1,14 @@
 package com.example.commercepaymentsystems.payments.service;
 
 import com.example.commercepaymentsystems.cart.service.CartService;
+import com.example.commercepaymentsystems.customers.entity.Customers;
+import com.example.commercepaymentsystems.customers.service.customers.CustomersService;
 import com.example.commercepaymentsystems.orders.entity.Order;
 import com.example.commercepaymentsystems.orders.entity.OrderItem;
 import com.example.commercepaymentsystems.orders.service.OrderService;
 import com.example.commercepaymentsystems.payments.dto.PaymentCancelResponse;
 import com.example.commercepaymentsystems.payments.dto.PaymentConfirmResponse;
 import com.example.commercepaymentsystems.payments.entity.Payment;
-import com.example.commercepaymentsystems.payments.port.PaymentGateway;
 import com.example.commercepaymentsystems.point.PointService;
 import com.example.commercepaymentsystems.products.entity.Product;
 import com.example.commercepaymentsystems.products.service.ProductService;
@@ -24,6 +25,7 @@ public class PaymentCommandService {
     private final OrderService orderService;
     private final ProductService productService;
     private final CartService cartService;
+    private final CustomersService  customersService;
     private final PointService pointService;
 
     @Transactional
@@ -35,8 +37,7 @@ public class PaymentCommandService {
         orderService.cancelOrder(order);
 
         //포인트 계산 후 포인트 복구
-        Long pointsToRestore = payment.getSavedPoints() - payment.getPointUsed();
-        pointService.restoreUsedPoint(payment.getOrder().getCustomer().getId(), pointsToRestore);
+        restorePoints(payment.getOrder().getCustomer().getId(), payment);
 
         restoreStock(order);
     }
@@ -46,10 +47,11 @@ public class PaymentCommandService {
         Payment payment = paymentService.findByOrderIdWithOrder(orderId);
         Order order = payment.getOrder();
         Long customerId = order.getCustomer().getId();
+        Customers customer = customersService.findById(customerId);
 
         paymentService.confirmPayment(payment);
         orderService.confirmOrder(order);
-        pointService.usePoint(customerId, payment.getPointUsed());
+        pointService.use(customer, payment, payment.getPointUsed());
 
         cartService.removeAllItems(order.getCustomer().getId());
 
@@ -66,9 +68,12 @@ public class PaymentCommandService {
     public PaymentCancelResponse cancelPaymentAndOrder(Long id) {
         Payment payment = paymentService.findByOrderIdWithOrder(id);
         Order order = payment.getOrder();
+        Long customerId = order.getCustomer().getId();
 
         paymentService.cancelPayment(payment);
         orderService.cancelOrder(order);
+
+        restorePoints(customerId, payment);
 
         return new PaymentCancelResponse(
                 payment.getId(),
@@ -87,5 +92,13 @@ public class PaymentCommandService {
             Product product = productService.findEntityById(item.getProduct().getId());
             product.restoreStock(item.getQuantity());
         }
+    }
+
+    private void restorePoints(Long customerId, Payment payment) {
+        Customers customer = customersService.findById(customerId);
+
+        //복구할 포인트 계산
+        Long pointsToRestore = payment.getSavedPoints() - payment.getPointUsed();
+        pointService.restoreUse(customer, payment, pointsToRestore);
     }
 }

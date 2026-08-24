@@ -49,7 +49,7 @@ public class PaymentFacade {
         }
 
         //포인트 사용 가능 여부 확인
-        if (!pointService.verifyPoint(customerId, payment.getPointUsed())) {
+        if (pointService.getBalance(customerId) >= payment.getPointUsed()) {
            throw new RuntimeException("Invalid point");
         }
 
