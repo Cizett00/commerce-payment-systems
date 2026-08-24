@@ -28,10 +28,10 @@ public class ProductService {
     public ProductPageResponse findAll(int page, int size, ProductCategory category, Long minimumPrice, Long maximumPrice, ProductStatus salesStatus,Boolean soldOut, String sort) {
         if (page <0){
             throw new BusinessException(ErrorCode.INVALID_PAGE);
-        }//페이지
+        }
         if (size<=0||size>100){
             throw new BusinessException(ErrorCode.INVALID_PAGE_SIZE);
-        }//칸
+        }
         if (minimumPrice != null && minimumPrice<0){
             throw new BusinessException(ErrorCode.INVALID_MINIMUM_PRICE);
         }
