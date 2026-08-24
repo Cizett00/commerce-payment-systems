@@ -8,5 +8,4 @@ public record RefundResponse(
         Long refundAmount,
         String refundStatus,
         String message
-) {
-}
+) { }

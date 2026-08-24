@@ -18,7 +18,6 @@ public class RefundController {
 
     private final RefundService refundService;
 
-
     @PostMapping("/{id}/refund")
     public ResponseEntity<RefundResponse> refund(
             @AuthenticationPrincipal Long customerId,
