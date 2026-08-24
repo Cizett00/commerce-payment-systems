@@ -57,7 +57,8 @@ class PaymentCommandServiceTest {
         Payment payment = new Payment(
                 10000L,
                 PaymentStatus.IN_PROGRESS,
-                order
+                order,
+                0L
         );
 
         given(paymentService.findByOrderIdWithOrder(anyLong())).willReturn(payment);
@@ -95,7 +96,8 @@ class PaymentCommandServiceTest {
         Payment payment = new Payment(
                 10000L,
                 PaymentStatus.CANCELLED,
-                order
+                order,
+                0L
         );
 
         given(paymentService.findByOrderIdWithOrder(anyLong())).willReturn(payment);
@@ -126,7 +128,8 @@ class PaymentCommandServiceTest {
         Payment payment = new Payment(
                 10000L,
                 PaymentStatus.IN_PROGRESS,
-                order
+                order,
+                0L
         );
 
         given(paymentService.findByOrderIdWithOrder(anyLong())).willReturn(payment);
@@ -165,7 +168,8 @@ class PaymentCommandServiceTest {
         Payment payment = new Payment(
                 10000L,
                 PaymentStatus.IN_PROGRESS,
-                order
+                order,
+                0L
         );
 
         given(paymentService.findByOrderIdWithOrder(anyLong())).willReturn(payment);

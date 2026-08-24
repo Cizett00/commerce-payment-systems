@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "payments")
@@ -38,13 +37,6 @@ public class Payment extends BaseEntity {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false, unique = true)
     Order order;
-
-    public Payment(Long finalPrice, PaymentStatus status, Order order) {
-        this.finalPrice = finalPrice;
-        this.status = status;
-        this.order = order;
-        this.portoneId = UUID.randomUUID().toString();
-    }
 
     public Payment (Long finalPrice, PaymentStatus status, Order order, Long pointUsed) {
         this.finalPrice = finalPrice;

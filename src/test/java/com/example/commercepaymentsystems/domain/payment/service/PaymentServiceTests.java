@@ -51,7 +51,8 @@ public class PaymentServiceTests {
                         customer,
                         "ord_num",
                         10000L
-                )
+                ),
+                0L
         );
         ReflectionTestUtils.setField(payment, "id", 1L);
         given(repo.findByIdAndCustomerId(anyLong(), anyLong())).willReturn(Optional.of(payment));
@@ -94,7 +95,8 @@ public class PaymentServiceTests {
                         customer,
                         "ord_num",
                         10000L
-                )
+                ),
+                0L
         );
         given(repo.findByOrderIdWithOrder(anyLong())).willReturn(Optional.of(payment));
 
@@ -134,7 +136,8 @@ public class PaymentServiceTests {
                         ),
                         "ord_num",
                         10000L
-                )
+                ),
+                0L
         );
 
         //when

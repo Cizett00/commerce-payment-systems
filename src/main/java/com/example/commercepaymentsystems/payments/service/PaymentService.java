@@ -40,11 +40,12 @@ public class PaymentService {
     }
 
     @Transactional
-    public void createPayment(Order order, Long totalPrice) {
+    public void createPayment(Order order, Long totalPrice, Long pointUsed) {
         Payment payment = new Payment(
                 totalPrice,
                 PaymentStatus.IN_PROGRESS,
-                order
+                order,
+                pointUsed
         );
 
         paymentRepository.save(payment);
