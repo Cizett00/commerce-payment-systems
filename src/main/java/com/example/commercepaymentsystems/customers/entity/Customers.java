@@ -1,5 +1,7 @@
 package com.example.commercepaymentsystems.customers.entity;
 import com.example.commercepaymentsystems.common.entity.BaseEntity;
+import com.example.commercepaymentsystems.common.exception.BusinessException;
+import com.example.commercepaymentsystems.common.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -45,6 +47,29 @@ public class Customers extends BaseEntity {
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
     }
+
+
+    public void addPoint(long amount) {
+        this.point += amount;
+    }
+
+
+    public void usePoint(Long pointUsed) {
+        if (pointUsed > this.point) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
+        }
+                this.point -= pointUsed;
+    }
+
+    public void revokePoint(Long pointUsed) {
+        this.point += pointUsed;
+    }
+
+    public void restorePoint(long amount) {
+        this.point += amount;
+    }
+
+
 }
 
 

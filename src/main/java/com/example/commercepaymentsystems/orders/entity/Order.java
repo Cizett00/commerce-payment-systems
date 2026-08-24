@@ -9,8 +9,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.prefs.Preferences;
-
 @Entity
 @Getter
 @Table(name = "orders")
@@ -31,14 +29,18 @@ public class Order extends BaseEntity {
     @Column(name = "total_price", nullable = false)
     private Long totalPrice;
 
+    @Column(name = "point_used", nullable = false)
+    private Long pointUsed;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus orderStatus;
 
-    public Order(Customers customer, String orderNumber, Long totalPrice) {
+    public Order(Customers customer, String orderNumber, Long totalPrice, Long pointUsed) {
         this.customer = customer;
         this.orderNumber = orderNumber;
         this.totalPrice = totalPrice;
+        this.pointUsed = pointUsed;
         this.orderStatus = OrderStatus.PENDING_PAYMENT;
     }
 
