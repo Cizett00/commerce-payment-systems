@@ -53,7 +53,7 @@ public class WebhookHandler {
         //실결제 정보 조회
         PaymentGatewayResponse pgRes = paymentGateway.getPayment(portonePaymentId);
 
-        //결제 완료 상태면 무시
+        //결제 완료 상태가 아니면 무시
         if (!"PAID".equals(pgRes.status())) {
             webhookEventService.markAsIgnored(eventId);
             return;
