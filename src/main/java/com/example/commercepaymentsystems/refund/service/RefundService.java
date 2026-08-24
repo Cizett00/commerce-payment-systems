@@ -46,6 +46,7 @@ public class RefundService {
     private final RefundItemRepository refundItemRepository;
 
 
+    //메인 로직
     @Transactional
     public RefundResponse refund(
             Long paymentId,
@@ -54,10 +55,8 @@ public class RefundService {
     ) {
 
         // 1. 결제 조회 + 본인 소유 검증
-        Payment payment = paymentRepository
-                .findByIdAndCustomerId(paymentId, customerId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND)
-                );
+        Payment payment = paymentRepository.findByIdAndCustomerId(paymentId, customerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
 
         // 2. 결제 상태 검증
         validatePaymentStatus(payment);
@@ -68,10 +67,10 @@ public class RefundService {
         validateOrderOwner(order, customerId);
 
         // 4. 환불 대상 OrderItem 조회
-        List<OrderItem> orderItems =
-                orderItemRepository.findAllByOrderId(order.getId());
+        List<OrderItem> orderItems = orderItemRepository.findAllByOrderId(order.getId());
 
         // 5. 전액 / 부분 환불
+        //item유무에 따른 전액/부분환불 결정
         boolean fullRefund = request.items() == null || request.items().isEmpty();
 
         if (fullRefund) {
@@ -81,14 +80,14 @@ public class RefundService {
                     orderItems,
                     request.reason()
             );
+        } else {
+            return partialRefund(
+                    payment,
+                    order,
+                    orderItems,
+                    request
+            );
         }
-
-        return partialRefund(
-                payment,
-                order,
-                orderItems,
-                request
-        );
     }
 
     private void validatePaymentStatus(Payment payment) {
@@ -99,7 +98,9 @@ public class RefundService {
             throw new BusinessException(
                     ErrorCode.INVALID_PAYMENT_STATUS
             );
+
         }
+
     }
 
     private void validateOrderOwner(
@@ -112,6 +113,7 @@ public class RefundService {
                     ErrorCode.PAYMENT_NOT_FOUND
             );
         }
+
     }
 
     private RefundResponse refundAll(
@@ -176,6 +178,7 @@ public class RefundService {
             Product product = orderItem.getProduct();
 
             product.restoreStock(remainingQuantity);
+
         }
 
         payment.markAsCancelled();
@@ -240,6 +243,7 @@ public class RefundService {
                             * itemRequest.quantity();
 
             totalRefundAmount += itemRefundAmount;
+
         }
 
         // 전체 결제금액 초과 여부
@@ -254,6 +258,7 @@ public class RefundService {
             throw new BusinessException(
                     ErrorCode.REFUND_AMOUNT_MISMATCH
             );
+
         }
 
         // Refund 생성
@@ -263,6 +268,7 @@ public class RefundService {
                 Math.toIntExact(totalRefundAmount),
                 request.reason(),
                 LocalDateTime.now()
+
         );
 
         refundRepository.save(refund);
@@ -290,14 +296,13 @@ public class RefundService {
             Product product = orderItem.getProduct();
 
             product.restoreStock(itemRequest.quantity());
+
         }
 
         // 현재까지의 환불금액
-        long totalRefunded =
-                alreadyRefundedAmount + totalRefundAmount;
+        long totalRefunded = alreadyRefundedAmount + totalRefundAmount;
 
-        boolean fullyRefunded =
-                totalRefunded >= payment.getFinalPrice();
+        boolean fullyRefunded = totalRefunded >= payment.getFinalPrice();
 
         if (fullyRefunded) {
             payment.markAsCancelled();
@@ -313,28 +318,17 @@ public class RefundService {
                 payment.getStatus().name(),
                 totalRefundAmount,
                 refund.getStatus().name(),
-                fullyRefunded
-                        ? "결제 취소 및 환불이 완료되었습니다."
-                        : "부분 결제 취소 및 환불이 완료되었습니다."
+                fullyRefunded ? "결제 취소 및 환불이 완료되었습니다." : "부분 결제 취소 및 환불이 완료되었습니다."
         );
     }
 
-    private void validateRefundRequest(
-            RefundItemRequest request
-    ) {
+    private void validateRefundRequest(RefundItemRequest request) {
 
         if (request.orderItemId() == null) {
-            throw new BusinessException(
-                    ErrorCode.INVALID_REFUND_ITEM
-            );
+            throw new BusinessException(ErrorCode.INVALID_REFUND_ITEM);
         }
+        if (request.quantity() == null || request.quantity() <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_REFUND_QUANTITY);
 
-        if (request.quantity() == null
-                || request.quantity() <= 0) {
-
-            throw new BusinessException(
-                    ErrorCode.INVALID_REFUND_QUANTITY
-            );
-        }
     }
 }
