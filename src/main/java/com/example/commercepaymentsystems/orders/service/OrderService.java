@@ -7,12 +7,14 @@ import com.example.commercepaymentsystems.common.exception.ErrorCode;
 import com.example.commercepaymentsystems.customers.entity.Customers;
 import com.example.commercepaymentsystems.customers.repository.CustomersRepository;
 import com.example.commercepaymentsystems.orders.dto.request.CreateOrderRequest;
+import com.example.commercepaymentsystems.orders.dto.request.OrderPreviewRequest;
 import com.example.commercepaymentsystems.orders.dto.response.CreateOrderResponse;
 import com.example.commercepaymentsystems.orders.dto.response.OrderDetailResponse;
 import com.example.commercepaymentsystems.orders.dto.response.OrderListResponse;
 import com.example.commercepaymentsystems.orders.dto.response.OrderPreviewResponse;
 import com.example.commercepaymentsystems.orders.entity.Order;
 import com.example.commercepaymentsystems.orders.entity.OrderItem;
+import com.example.commercepaymentsystems.orders.entity.OrderStatus;
 import com.example.commercepaymentsystems.orders.repository.OrderItemRepository;
 import com.example.commercepaymentsystems.orders.repository.OrderRepository;
 import com.example.commercepaymentsystems.payments.entity.Payment;
@@ -22,6 +24,8 @@ import com.example.commercepaymentsystems.payments.service.PaymentService;
 import com.example.commercepaymentsystems.products.entity.Product;
 import com.example.commercepaymentsystems.products.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,17 +47,15 @@ public class OrderService {
 
 
     // 주문 미리보기
-    // 로그인한 고객의 장바구니 전체를 조회해서 현재 상품 가격 기준으로 예상 주문 금액을 계산한다.
-    public OrderPreviewResponse getOrderPreview(Long customerId) {
+    // 로그인한 고객의 전체 장바구니 또는 선택한 장바구니 상품을 기준으로 현재 상품 가격과 예상 주문 금액을 계산한다.
+    public OrderPreviewResponse getOrderPreview(Long customerId, OrderPreviewRequest request) {
 
-        // 1. 고객의 장바구니 전체 조회
-        List<CartItem> cartItems =
-                cartService.findCartEntities(customerId);
+        // 1. 요청한 장바구니 상품 ID 조회
+        // request가 없거나 cartItemIds가 비어 있으면 전체 장바구니로 처리
+        List<Long> cartItemIds = request == null ? List.of() : request.cartItemIds();
 
-        // 2. 장바구니가 비어 있으면 미리보기 불가
-        if (cartItems.isEmpty()) {
-            throw new BusinessException(ErrorCode.CART_ITEM_NOT_FOUND);
-        }
+        // 2. 전체 장바구니 또는 선택한 장바구니 상품 조회
+        List<CartItem> cartItems = getValidateCartItems(customerId, cartItemIds);
 
         // 3. CartItem → OrderPreviewItemResponse 변환
         // 미리보기에서는 OrderItem 스냅샷 가격이 아니라 Product의 현재 가격을 사용한다.
@@ -144,6 +146,17 @@ public class OrderService {
             totalPrice += subtotal;
         }
 
+        // 사용할 포인트
+        Long pointUsed = request.pointUsed();
+
+        // 주문 금액보다 많은 포인트 사용 방지
+        if (pointUsed > totalPrice) {
+            throw new IllegalArgumentException("사용 포인트가 주문금액을 초과하여 사용불가능합니다.");
+        }
+
+        // 보유 포인트 확인 + 차감
+        customer.usePoint(pointUsed);
+
         // 4. 주문번호 생성
         String orderNumber = generateOrderNumber();
 
@@ -152,7 +165,8 @@ public class OrderService {
         Order order = new Order(
                 customer,
                 orderNumber,
-                totalPrice
+                totalPrice,
+                pointUsed
         );
 
         Order savedOrder =
@@ -175,7 +189,7 @@ public class OrderService {
 
         // 7. 결제 사전 기록 생성
         // 결제 금액은 반드시 주문에서 계산한 totalAmount를 사용한다.
-        paymentService.createPayment(savedOrder, totalPrice);
+        paymentService.createPayment(savedOrder, totalPrice, pointUsed);
 
         // 주문 생성 시 장바구니는 삭제하지 않는다.
         // 결제 실패 후 다시 결제할 수 있어야 하기 때문에 장바구니 삭제는 결제 성공 시점에 처리한다.
@@ -185,6 +199,7 @@ public class OrderService {
                 savedOrder.getId(),
                 savedOrder.getOrderNumber(),
                 savedOrder.getTotalPrice(),
+                savedOrder.getPointUsed(),
                 savedOrder.getOrderStatus().name()
         );
     }
@@ -192,13 +207,11 @@ public class OrderService {
 
     // 내 주문 목록 조회
     // 최신 주문부터 조회한다.
-    public List<OrderListResponse> getOrders(Long customerId) {
+    public Page<OrderListResponse> getOrders(Long customerId, Pageable pageable) {
 
         return orderRepository
-                .findByCustomer_IdOrderByCreatedAtDesc(customerId)
-                .stream()
-                .map(this::toListResponse)
-                .toList();
+                .findByCustomer_IdOrderByCreatedAtDesc(customerId, pageable)
+                .map(this::toListResponse);
     }
 
 
@@ -228,6 +241,7 @@ public class OrderService {
                 order.getId(),
                 order.getOrderNumber(),
                 order.getTotalPrice(),
+                order.getPointUsed(),
                 order.getOrderStatus().name(),
                 order.getCreatedAt(),
                 orderItems
@@ -297,12 +311,6 @@ public class OrderService {
         return cartItems;
     }
 
-    // payment에서 사용
-    @Transactional
-    public void cancelOrder(Order order) {
-        order.cancel();
-    }
-
     @Transactional
     public void confirmOrder(Order order) {
         order.confirm();
@@ -316,10 +324,35 @@ public class OrderService {
                         () -> new BusinessException(ErrorCode.ORDER_NOT_FOUND)
                 );
 
+        // 본인 주문 확인
         if (!order.getCustomer().getId().equals(customerId)) {
             throw new BusinessException(ErrorCode.ORDER_ACCESS_DENIED);
         }
 
+        // 결제 대기 상태만 취소 가능
+        if (order.getOrderStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new BusinessException(ErrorCode.INVALID_ORDER_STATUS);
+        }
+
+        // 주문 상품 조회
+        List<OrderItem> orderItems = orderItemRepository.findByOrder_Id(orderId);
+
+        // 선차감 재고 복구
+        for (OrderItem orderItem : orderItems) {
+            orderItem.getProduct().restoreStock(orderItem.getQuantity());
+        }
+
+        // 주문 취소
+        order.cancel();
+
+        // 결제 취소
+        Payment payment = paymentService.findByOrderIdWithOrder(orderId);
+
+        payment.markAsCancelled();
+    }
+
+    @Transactional
+    public void cancelOrder(Order order) {
         order.cancel();
     }
 }
